@@ -1,0 +1,12 @@
+popsize  50000
+mutrate  1e-08
+seqlength 5e04
+sampsize  100
+sampfreq 10
+useMS 1
+mscommand ./ms 100000 1 -t 100 >ms_output
+demography 0 2 0
+dem_parameter 0 -10 0
+dem_start_gen 0  1001  5901
+dem_end_gen 1000  5900   8500
+carrying_cap 0 0 0
