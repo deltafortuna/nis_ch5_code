@@ -1,12 +1,21 @@
-popsize  50000
+popsize  10000
 mutrate  1e-08
-seqlength 5e04
+useRec 1
+useHotRec 1
+recrate  1e-09
+hotrecrate 1e-06
+hotrecStart 80000
+hotrecStop  81999
+seqlength 2e05
 sampsize  100
-sampfreq 10
+sampfreq 25
+demography 0
+dem_parameter 0
+dem_start_gen 0
+dem_end_gen 100002
+carrying_cap 0
 useMS 1
-mscommand ./ms 100000 1 -t 100 >ms_output
-demography 0 2 0
-dem_parameter 0 -10 0
-dem_start_gen 0  1001  5901
-dem_end_gen 1000  5900   8500
-carrying_cap 0 0 0
+getWindowStats 1
+windowSize 10000
+windowStep 5000
+mscommand ./ms 20000 1 -t 80 >ms_output

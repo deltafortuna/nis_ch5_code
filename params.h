@@ -18,5 +18,14 @@ extern vector<int> dem_start_gen;
 extern vector<int> dem_end_gen;
 extern vector<int> carrying_cap;
 extern vector<int> pop_schedule;
+extern double recrate;
+extern double hotrecrate;
+extern bool useRec;
+extern bool useHotRec;
+extern int hotrecStart;
+extern int hotrecStop;
+extern bool getWindowStats;
+extern int windowSize;
+extern int windowStep;
 
 #endif

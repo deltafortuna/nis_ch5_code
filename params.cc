@@ -73,9 +73,9 @@ vector<int> create_pop_schedule()
 }
 
 // variable names
-int popsize, sampsize, seqlength, sampfreq;
-double mutrate;
-bool useMS;
+int popsize, sampsize, seqlength, sampfreq, hotrecStart, hotrecStop, windowSize, windowStep;
+double mutrate, recrate, hotrecrate;
+bool useMS, useRec, useHotRec, getWindowStats;
 string mscommand;
 vector<int> demography;
 vector<double> dem_parameter;
@@ -96,6 +96,15 @@ int process_parameters() {
 	dem_start_gen = get_multi_int_param("dem_start_gen");
 	dem_end_gen = get_multi_int_param("dem_end_gen");
 	carrying_cap = get_multi_int_param("carrying_cap");
+	recrate = atof(parameters["recrate"].c_str());
+	hotrecrate = atof(parameters["hotrecrate"].c_str());
+	hotrecStart = atoi(parameters["hotrecStart"].c_str());
+	hotrecStop = atoi(parameters["hotrecStop"].c_str());
+	windowSize = atoi(parameters["windowSize"].c_str());
+	windowStep = atoi(parameters["windowStep"].c_str());
+	useRec = atoi(parameters["useRec"].c_str());
+	useHotRec = atoi(parameters["useHotRec"].c_str());
+	getWindowStats = atoi(parameters["getWindowStats"].c_str());
 	return 1;
 }
 

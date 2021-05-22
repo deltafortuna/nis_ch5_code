@@ -14,10 +14,10 @@ uniform_int_distribution<int> randompos;
 uniform_int_distribution<int> randomind;
 uniform_real_distribution<double> randomnum;
 poisson_distribution<int> randommut;
-ofstream pi_file;
-ofstream watterson_file;
 ofstream allele_file;
 ofstream sumstat_file; // all sumstats printed here
+double r_sequence;
+poisson_distribution<int> randomrec;
 
 vector<vector<int> > mutate(const vector<int> &parents, const int &gen) {
 	vector<vector<int> > mutation_results;
@@ -117,14 +117,49 @@ void get_sample(int gen) {
 				hap += "0";
 		sample.push_back(bitset<bitlength> (hap));
 	}
-	int S = allele_counts.size();
-  pi_file << gen << " " << get_pi(sample) << endl;
-  watterson_file << gen << " " << get_watterson(sample, S) << endl;
 
-	double pi = get_pi(sample);
-	double watterson = get_watterson(sample, S);
-	double tajimasd = get_tajimas_d(pi, watterson, S);
-	sumstat_file << gen << " " << pi << " " << watterson << " " << tajimasd << endl;
+	vector<int> positions;
+	for (auto iter = allele_counts.begin(); iter != allele_counts.end(); ++iter)
+		positions.push_back(iter->first);
+	int S = allele_counts.size();
+
+	if (getWindowStats) {
+		map<string, vector<double> > stats = get_windowStats(positions, sample, S);
+		for (auto iter = stats.begin(); iter != stats.end(); ++iter) {
+			sumstat_file << gen << " ";
+			sumstat_file << iter->first << " ";
+			for (auto iter2 = (iter->second).begin(); iter2 != (iter->second).end(); ++iter2)
+				sumstat_file << *iter2 << " ";
+			sumstat_file << endl;
+		}
+	} else {
+		double pi = get_pi(sample);
+		double watterson = get_watterson(S);
+		double tajimasd = get_tajimas_d(pi, watterson, S);
+		sumstat_file << gen << " " << pi << " " << watterson << " " << tajimasd << endl;
+	}
+}
+
+vector<int> recombine() {
+ vector<int> breakpoints;
+ if (useRec) {  /// if false, empty vector passed to Individual constructor
+	 int chiasmata = randomrec(e);
+	 for (int i=0; i<chiasmata; ++i) {
+		 if (useHotRec) {
+			 double c = randomnum(e);
+			 if (c < hotrecStart * recrate / r_sequence )
+				 breakpoints.push_back( c * r_sequence / recrate );
+			 else if (c < (hotrecStop*hotrecrate - hotrecStart*(hotrecrate-recrate)) / r_sequence)
+				 breakpoints.push_back(  (c*r_sequence + hotrecStart*(hotrecrate - recrate))    /     hotrecrate);
+			 else
+				 breakpoints.push_back( (c*r_sequence - (hotrecStop-hotrecStart)*(hotrecrate-recrate)   )    / recrate );
+		 } else {
+			 breakpoints.push_back(randompos(e));
+		 }
+	 }
+	 sort(breakpoints.begin(), breakpoints.end());
+ }
+ return breakpoints;
 }
 
 public:
@@ -137,7 +172,7 @@ void reproduce(int gen) {
 		parents.push_back(randomind(e));
 
 		// create descendant of individuals parents[0] and parents[1]
-		individuals.push_back( new Individual(individuals[parents[0]], individuals[parents[1]], mutate(parents, gen)) );
+		individuals.push_back(new Individual(individuals[parents[0]], individuals[parents[1]], mutate(parents, gen), recombine()) );
 	}
 
 	// delete dynamically allocated individuasl of the last generation
@@ -157,8 +192,6 @@ void reproduce(int gen) {
 }
 
 void close_output_files () {
-	watterson_file.close();
-	pi_file.close();
 	allele_file.close();
 	sumstat_file.close();
 }
@@ -171,7 +204,16 @@ Population () {
 	randomnum.param(uniform_real_distribution<double>::param_type(0.,1.));
  	randommut.param(poisson_distribution<int>::param_type(mu_sequence));
 
-	individuals.reserve(popsize*2);
+	individuals.reserve(popsize*10);
+
+	if (useRec) {
+		if (useHotRec) {
+			int hotspot_length = hotrecStop - hotrecStart + 1;
+			r_sequence = ( hotspot_length * hotrecrate )  +  ((seqlength - hotspot_length) * recrate);
+		} else
+			r_sequence = seqlength * recrate;
+		randomrec.param(poisson_distribution<int>::param_type(r_sequence));
+	}
 
 	if (useMS) { // start population with MS generated variation
 		cout << "using MS to initialize population ..." << endl;
@@ -218,21 +260,19 @@ Population () {
 		}
 	}
 
-	string fname = "nucleotide_diversity";
-	pi_file.open(fname.c_str());
-	pi_file << "gen summary.stat" << endl;
-
-	fname = "watterson_estimator";
-	watterson_file.open(fname.c_str());
-	watterson_file << "gen summary.stat" << endl;
-
-	fname = "allele_info";
+	string fname = "allele_info";
 	allele_file.open(fname.c_str());
 	allele_file << "position birthgen lifespan extinct.fixed" << endl;
 
 	fname = "sumstats";
 	sumstat_file.open(fname.c_str());
-	sumstat_file << "gen pi watterson tajimasd" << endl;
+	if (getWindowStats) {
+		sumstat_file << "gen stat ";
+		for (int w=0; w + windowSize <= seqlength; w += windowStep)
+			sumstat_file << "w" << w+windowStep << " ";
+		sumstat_file << endl;
+	}	else
+		sumstat_file << "gen pi watterson tajimasd" << endl;
 }
 
 static mt19937 e;
